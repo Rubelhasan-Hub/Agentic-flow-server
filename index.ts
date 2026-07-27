@@ -1,6 +1,8 @@
 import express from 'express'
 import cors from 'cors'
 import { MongoClient, ObjectId } from 'mongodb'
+import dotenv from "dotenv";
+dotenv.config();
 
 const app = express()
 const PORT = process.env.PORT || 5000
@@ -87,6 +89,62 @@ app.post('/api/items', async (req, res) => {
     const client = await clientPromise
     const collection = client.db(DB_NAME).collection('items')
 
+    const newItem = {
+      title: req.body.title,
+      shortDescription: req.body.shortDescription,
+      fullDescription: req.body.fullDescription,
+      price: req.body.price,
+      date: req.body.date,
+      priority: req.body.priority || "Medium",
+      imageUrl: req.body.imageUrl || "",
+      category: req.body.category || "General",
+      location: req.body.location || "Cloud Node",
+      rating: req.body.rating || 4.5,
+      status: req.body.status || "approved",
+      userEmail: req.body.userEmail || "",
+      createdAt: new Date(),
+    }
+
+    const result = await collection.insertOne(newItem)
+    const createdItem = await collection.findOne({ _id: result.insertedId })
+
+    res.status(201).json(createdItem)
+  } catch (error) {
+    res.status(500).json({ message: 'Error inserting item', error: String(error) })
+  }
+})
+
+app.get('/api/items/:id', async (req, res) => {
+  try {
+    const { id } = req.params
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid item ID' })
+    }
+
+    const client = await clientPromise
+    const collection = client.db(DB_NAME).collection('items')
+
+    const item = await collection.findOne({ _id: new ObjectId(id) })
+
+    if (!item) {
+      return res.status(404).json({ message: 'Item not found' })
+    }
+
+    res.json(item)
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching item details', error: String(error) })
+  }
+})
+
+app.post('/api/items', async (req, res) => {
+  try {
+    if (!req.body || Object.keys(req.body).length === 0) {
+      return res.status(400).json({ message: 'Request body is required' })
+    }
+
+    const client = await clientPromise
+    const collection = client.db(DB_NAME).collection('items')
+
     const item = { ...req.body, createdAt: new Date() }
     const result = await collection.insertOne(item)
     const createdItem = await collection.findOne({ _id: result.insertedId })
@@ -134,6 +192,66 @@ app.post('/api/users', async (req, res) => {
     res.status(201).json(createdUser)
   } catch (error) {
     res.status(500).json({ message: 'Error saving user', error: String(error) })
+  }
+})
+
+app.get('/api/features', async (req, res) => {
+  try {
+    const client = await clientPromise
+    const features = await client.db(DB_NAME).collection('features').find({}).toArray()
+    res.json(features)
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching features', error: String(error) })
+  }
+})
+
+app.get('/api/categories', async (req, res) => {
+  try {
+    const client = await clientPromise
+    const categories = await client.db(DB_NAME).collection('categories').find({}).toArray()
+    res.json(categories)
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching categories', error: String(error) })
+  }
+})
+
+app.get('/api/stats', async (req, res) => {
+  try {
+    const client = await clientPromise
+    const stats = await client.db(DB_NAME).collection('stats').find({}).toArray()
+    res.json(stats)
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching stats', error: String(error) })
+  }
+})
+
+app.get('/api/testimonials', async (req, res) => {
+  try {
+    const client = await clientPromise
+    const testimonials = await client.db(DB_NAME).collection('testimonials').find({}).toArray()
+    res.json(testimonials)
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching testimonials', error: String(error) })
+  }
+})
+
+app.get('/api/faq', async (req, res) => {
+  try {
+    const client = await clientPromise
+    const faq = await client.db(DB_NAME).collection('faq').find({}).toArray()
+    res.json(faq)
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching faq', error: String(error) })
+  }
+})
+
+app.get('/api/site', async (req, res) => {
+  try {
+    const client = await clientPromise
+    const siteContent = await client.db(DB_NAME).collection('siteContent').findOne({})
+    res.json(siteContent || {})
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching site content', error: String(error) })
   }
 })
 
